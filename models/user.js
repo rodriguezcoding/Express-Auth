@@ -49,7 +49,25 @@ userSchema.methods.genToken = function() {
   );
 };
 
-const validateUser = user => {
+const validateSignIn = user => {
+  const schema = {
+    email: joi
+      .string()
+      .min(5)
+      .max(255)
+      .email()
+      .required(),
+    password: joi
+      .string()
+      .min(3)
+      .max(1024)
+      .required()
+  };
+
+  return joi.validate(user, schema);
+};
+
+const validateSignUp = user => {
   const userSchema = {
     displayName: joi
       .string()
@@ -69,6 +87,8 @@ const validateUser = user => {
     email: joi
       .string()
       .email()
+      .min(5)
+      .max(255)
       .required(),
     password: joi
       .string()
@@ -79,5 +99,6 @@ const validateUser = user => {
   return joi.validate(user, userSchema);
 };
 
-exports.signUpValidation = validateUser;
+exports.signUpValidation = validateSignUp;
+exports.signInValidation = validateSignIn;
 exports.User = mongoose.model("User", userSchema);

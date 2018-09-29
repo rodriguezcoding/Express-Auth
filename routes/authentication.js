@@ -1,11 +1,16 @@
 const bcrypt = require("bcryptjs");
-const { User, signUpValidate } = require("../models/user.js");
+const {
+  User,
+  signUpValidation,
+  signInValidation
+} = require("../models/user.js");
 const express = require("express");
 const router = express();
 const _ = require("lodash");
 
+//User registration
 router.post("/api/sign-up", async (req, res) => {
-  const { error } = signUpValidate(req.body.signUp);
+  const { error } = signUpValidation(req.body.signUp);
   if (error) return res.status(400).send(error.details[0].message);
 
   const checkUser = await User.findOne({ email: req.body.signUp.email });
@@ -29,7 +34,24 @@ router.post("/api/sign-up", async (req, res) => {
     .send(_.pick(user, ["_id", "email", "displayName", "profilePicture"]));
 });
 
+//User authentication
 router.post("/api/sign-in", async (req, res) => {
-    const {error}
-})
+  const { error } = signInValidation(req.body.signIn);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  const checkUser = await User.findOne({ email: req.body.signIn.email });
+  if (!checkUser) return res.status(400).send("Invalid email or password");
+
+  const validatePassword = await bcrypt.compare(
+    req.body.signIn.password,
+    checkUser.password
+  );
+
+  if (!validatePassword)
+    return res.status(400).send("Invalid email or password");
+  const token = checkUser.genToken();
+
+  res.status(200).send(token);
+});
+
 module.exports = router;
