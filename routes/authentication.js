@@ -8,6 +8,7 @@ const express = require("express");
 const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
+const authToken = require("../middlewares/authToken.js");
 
 //User registration
 router.post("/sign-up", async (req, res) => {
@@ -28,17 +29,17 @@ router.post("/sign-up", async (req, res) => {
   const salting = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salting);
   let hashedId = await bcrypt.hash(user._id.toString(), salting);
-  hashedId = hashedId.replace("/", "|");
+  hashedId = hashedId.replace("/", ".");
   user.hashedId = hashedId;
   emailConfirmation(user.email, hashedId);
   await user.save();
   res.send(
-    "An email confirmation has been sent, to your email. Accounts not confirmed in 24 hours will be automatically deleted"
+    "An email confirmation has been sent to your email. Accounts not confirmed in 24 hours will be automatically deleted"
   );
 });
 
 //Email confirmation
-router.get("/emailConfirmation/verify/:hash", async (req, res) => {
+router.get("/emailConfirmation/verify/:hash", async (req, res) => {  
   const user = await User.findOne({ hashedId: req.params.hash });
   if (!user)
     return res.status(400).send("An error has occur during email confirmation");
@@ -53,6 +54,16 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
     .send(
       "Great, your account is ready to use, you can now log into your account"
     );
+});
+
+//Re-send verification
+router.post("/reSendVerification/:id", authToken, async (req, res) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return res.status(400).send("User not found");
+  emailConfirmation(user.email, user.hashedId);
+  res.send(
+    "An email confirmation has been sent to your email. Accounts not confirmed in 24 hours will be automatically deleted"
+  );
 });
 
 //User authentication
@@ -70,6 +81,7 @@ router.post("/sign-in", async (req, res) => {
 
   if (!validatePassword)
     return res.status(400).send("Invalid email or password");
+  
   const token = checkUser.genToken();
 
   res.status(200).send(token);
