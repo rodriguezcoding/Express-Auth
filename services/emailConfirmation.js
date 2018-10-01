@@ -11,7 +11,7 @@ const emailConfirmation = (email, hashId) => {
     refreshToken: process.env.SECRET_KEY_EMAIL_REFRESH_TOKEN
   });
 
-  var smtpTransport = nodemailer.createTransport(
+  const smtpTransport = nodemailer.createTransport(
     smtp({
       service: "gmail",
       auth: {
@@ -20,12 +20,12 @@ const emailConfirmation = (email, hashId) => {
     })
   );
 
-  var mailOptions = {
+  let mailOptions = {
     from: "NoReply<authenticate.noreply@gmail.com>",
     to: email,
-    subject: "Does this works?",
+    subject: "Confirm Your Email",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to the service, to confirm email please click : http://localhost:3000/api/${hashId}</b>`
+    html: `<b>Hello welcome to the service, to confirm email please click : http://localhost:3000/emailConfirmation/verify/${hashId}</b>`
   };
 
   smtpTransport.sendMail(mailOptions, (error, response) => {
