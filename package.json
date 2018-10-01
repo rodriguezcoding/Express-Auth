@@ -1,12 +1,16 @@
 {
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cors": "^2.8.4",
     "dotenv": "^6.0.0",
     "express": "^4.16.3",
     "joi": "^13.7.0",
     "jsonwebtoken": "^8.3.0",
     "lodash": "^4.17.11",
     "mongoose": "^5.3.0",
-    "nodemon": "^1.18.4"
+    "nodemailer": "^4.6.8",
+    "nodemailer-smtp-transport": "^2.7.4",
+    "nodemon": "^1.18.4",
+    "xoauth2": "^1.2.0"
   }
 }
