@@ -57,7 +57,7 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
 });
 
 //Re-send verification
-router.post("/reSendVerification/:id", async (req, res) => {
+router.post("/reSendVerification/:id", authToken, async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
   emailConfirmation(user.email, user.hashedId);
