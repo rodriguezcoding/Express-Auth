@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema(
       minlength: 3,
       maxlength: 1024
     },
-    expire_at: { type: Date, default: Date.now, expires: 86400 }
+    expire_at: { type: Date, default: Date.now, expires: 43200 }
   },
   {
     timestamps: true

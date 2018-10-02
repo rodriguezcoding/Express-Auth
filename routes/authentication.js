@@ -19,17 +19,17 @@ router.post("/sign-up", async (req, res) => {
   if (checkUser) return res.status(400).send("User already exist");
 
   const checkUserName = await User.findOne({
-    userName: req.body.signUp.userName
+    displayName: req.body.signUp.displayName
   });
-  if (checkUserName) return res.status(400).send("Username already exist");
+  if (checkUserName) return res.status(400).send("Display name already exist");
 
   req.body.signUp.isActive = false;
   const user = new User(req.body.signUp);
 
   const salting = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salting);
-  let hashedId = await bcrypt.hash(user._id.toString(), salting);
-  hashedId = hashedId.replace("/", ".");
+  let hashedId = await bcrypt.hash(user._id.toString(), 10);
+  hashedId = hashedId.replace(/[/\\&;%@+,]/g, "");
   user.hashedId = hashedId;
   emailConfirmation(user.email, hashedId);
   await user.save();
@@ -39,7 +39,7 @@ router.post("/sign-up", async (req, res) => {
 });
 
 //Email confirmation
-router.get("/emailConfirmation/verify/:hash", async (req, res) => {  
+router.get("/emailConfirmation/verify/:hash", async (req, res) => {
   const user = await User.findOne({ hashedId: req.params.hash });
   if (!user)
     return res.status(400).send("An error has occur during email confirmation");
@@ -57,7 +57,7 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
 });
 
 //Re-send verification
-router.post("/reSendVerification/:id", authToken, async (req, res) => {
+router.post("/reSendVerification/:id", async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
   emailConfirmation(user.email, user.hashedId);
@@ -81,7 +81,7 @@ router.post("/sign-in", async (req, res) => {
 
   if (!validatePassword)
     return res.status(400).send("Invalid email or password");
-  
+
   const token = checkUser.genToken();
 
   res.status(200).send(token);
