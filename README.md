@@ -9,7 +9,7 @@ These instructions will get you a copy of the project up and running on your loc
 ### Start server
 
 ```
-Yarn add to install dependencies or you can use npm too.
+Yarn to install dependencies or you can use npm too.
 Yarn run-server to start the server.
 ```
 
