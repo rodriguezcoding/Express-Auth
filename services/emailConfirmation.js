@@ -16,7 +16,7 @@ const emailConfirmation = (user) => {
     to: user.email,
     subject: "Confirm Your Email",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to the service, to complete registrarion please click: http://localhost:3000/emailConfirmation/verify/${
+    html: `<b>Hello welcome to the service, to complete registrarion please click: http://localhost:4741/emailConfirmation/verify/${
       user.hashedId
     } </b>`
   };

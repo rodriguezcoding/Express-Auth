@@ -22,10 +22,10 @@ router.post("/sign-up", async (req, res) => {
     displayName: req.body.signUp.displayName
   });
   if (checkUserName) return res.status(400).send("Display name already exist");
-  req.body.signUp.isActive = false;
+  // req.body.signUp.isActive = false;
 
   const user = new User(req.body.signUp);
-
+  user.isActive = false;
   const salting = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salting);
 
@@ -35,6 +35,7 @@ router.post("/sign-up", async (req, res) => {
 
   const { smtpTransport, close } = emailConfirmation(user);
   const sendMail = await smtpTransport;
+
   if (!sendMail) {
     close.close();
     return res
@@ -43,8 +44,10 @@ router.post("/sign-up", async (req, res) => {
         "There was an error sending the email confirmation please try again"
       );
   }
+
   close.close();
   await user.save();
+
   res.send(
     "An email confirmation has been sent to your email. Accounts not confirmed in 12 hours will be automatically deleted"
   );
@@ -69,10 +72,22 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
 });
 
 //Re-send verification
-router.post("/reSendVerification/:id", authToken, async (req, res) => {
+router.post("/reSendVerification/:id", async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
-  emailConfirmation(user.email, user.hashedId);
+
+  const { smtpTransport, close } = emailConfirmation(user);
+  const sendMail = await smtpTransport;
+
+  if (!sendMail) {
+    close.close();
+    return res
+      .status(400)
+      .send(
+        "There was an error sending the email confirmation please try again"
+      );
+  }
+  close.close();
   res.send(
     "An email confirmation has been sent to your email. Accounts not confirmed in 12 hours will be automatically deleted"
   );
