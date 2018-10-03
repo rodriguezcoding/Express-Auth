@@ -22,19 +22,31 @@ router.post("/sign-up", async (req, res) => {
     displayName: req.body.signUp.displayName
   });
   if (checkUserName) return res.status(400).send("Display name already exist");
-
   req.body.signUp.isActive = false;
+
   const user = new User(req.body.signUp);
 
   const salting = await bcrypt.genSalt(10);
   user.password = await bcrypt.hash(user.password, salting);
+
   let hashedId = await bcrypt.hash(user._id.toString(), 10);
   hashedId = hashedId.replace(/[/\\&;%@+,]/g, "");
   user.hashedId = hashedId;
-  emailConfirmation(user.email, hashedId);
+
+  const { smtpTransport, close } = emailConfirmation(user);
+  const sendMail = await smtpTransport;
+  if (!sendMail) {
+    close.close();
+    return res
+      .status(400)
+      .send(
+        "There was an error sending the email confirmation please try again"
+      );
+  }
+  close.close();
   await user.save();
   res.send(
-    "An email confirmation has been sent to your email. Accounts not confirmed in 24 hours will be automatically deleted"
+    "An email confirmation has been sent to your email. Accounts not confirmed in 12 hours will be automatically deleted"
   );
 });
 
@@ -62,7 +74,7 @@ router.post("/reSendVerification/:id", authToken, async (req, res) => {
   if (!user) return res.status(400).send("User not found");
   emailConfirmation(user.email, user.hashedId);
   res.send(
-    "An email confirmation has been sent to your email. Accounts not confirmed in 24 hours will be automatically deleted"
+    "An email confirmation has been sent to your email. Accounts not confirmed in 12 hours will be automatically deleted"
   );
 });
 
