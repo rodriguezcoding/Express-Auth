@@ -25,7 +25,7 @@ const emailConfirmation = (email, hashId) => {
     to: email,
     subject: "Confirm Your Email",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to the service, to complete registrarion please click : http://localhost:3000/emailConfirmation/verify/${hashId}</b>`
+    html: `<b>Hello welcome to the service, to complete registrarion please click: http://localhost:3000/emailConfirmation/verify/${hashId} </b>`
   };
 
   smtpTransport.sendMail(mailOptions, (error, response) => {

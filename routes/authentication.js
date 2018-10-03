@@ -15,7 +15,7 @@ router.post("/sign-up", async (req, res) => {
   const { error } = signUpValidation(req.body.signUp);
   if (error) return res.status(400).send(error.details[0].message);
 
-  const checkUser = await User.findOne({ email: req.body.signUp.email });
+  const checkUser = await User  .findOne({ email: req.body.signUp.email });
   if (checkUser) return res.status(400).send("User already exist");
 
   const checkUserName = await User.findOne({
