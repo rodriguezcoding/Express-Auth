@@ -183,13 +183,9 @@ router.get("/accountRecovery/verify/:hash", async (req, res) => {
       );
   const hash = await bcrypt.hash(user._id.toString(), 10);
   const hashedId = hash.replace(/[/\\&;%@+,]/g, "");
-  const updateHash = await User.updateOne(
-    { _id: user._id },
-    { hashedId: hashedId }
-  );
   user.hashedId = hashedId;
-  console.log(updateHash);
-
+  user.expire_at = undefined;
+  await user.save();
   res.status(200).send(user.hashedId);
 });
 
@@ -201,8 +197,6 @@ router.post("/accountRecovery/recoverPassword/:hash", (req, res) => {
 
   const { error } = validatePasswordRecovery(req.body.recoverAccount);
   if (error) return res.status(400).send(error.details[0].message);
-
- 
 });
 
 //User authentication
