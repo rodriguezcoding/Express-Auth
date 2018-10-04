@@ -76,6 +76,42 @@ const validateSignIn = user => {
   return joi.validate(user, schema);
 };
 
+const validatePasswordRecovery = password => {
+  const schema = {
+    new: joi
+      .string()
+      .min(3)
+      .max(1024)
+      .required(),
+    confirmNew: string(),
+    hashedId: string()
+  };
+  return joi.validate(password, schema);
+};
+const validateNewPassword = password => {
+  const schema = {
+    old: joi.string(),
+    new: joi
+      .string()
+      .min(3)
+      .max(1024)
+      .required()
+  };
+  return joi.validate(password, schema);
+};
+
+const validateAccountRecovery = email => {
+  const schema = {
+    email: joi
+      .string()
+      .min(5)
+      .max(255)
+      .email()
+      .required()
+  };
+
+  return joi.validate(email, schema);
+};
 const validateSignUp = user => {
   const userSchema = {
     displayName: joi
@@ -108,6 +144,9 @@ const validateSignUp = user => {
   return joi.validate(user, userSchema);
 };
 
+exports.validatePasswordRecovery = validatePasswordRecovery;
+exports.validateAccountRecoveryEmail = validateAccountRecovery;
+exports.validateNewPassword = validateNewPassword;
 exports.signUpValidation = validateSignUp;
 exports.signInValidation = validateSignIn;
 exports.User = mongoose.model("User", userSchema);
