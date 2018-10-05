@@ -142,7 +142,7 @@ router.post("/accountRecovery", async (req, res) => {
   if (!user) return res.status(404).send("Email not found");
 
   const hash = await bcrypt.hash(user._id.toString(), 10);
-  const hashedId = hash.replace(/[/\\&;%@+,]/g, "");
+  const hashedId = hash.replace(/[/\\&;%@+.,]/g, "");
 
   const reAddHashId = await User.updateOne(
     { _id: user._id },
@@ -182,21 +182,40 @@ router.get("/accountRecovery/verify/:hash", async (req, res) => {
         "This account was already validated for recovery or could not be found"
       );
   const hash = await bcrypt.hash(user._id.toString(), 10);
-  const hashedId = hash.replace(/[/\\&;%@+,]/g, "");
+  const hashedId = hash.replace(/[/\\&;%@+.,]/g, "");
   user.hashedId = hashedId;
   user.expire_at = undefined;
   await user.save();
   res.status(200).send(user.hashedId);
 });
 
-router.post("/accountRecovery/recoverPassword/:hash", (req, res) => {
-  if (req.body.recoverAccount.new === req.body.recoverAccount.confirmNew)
+router.patch("/accountRecovery/recoverPassword/", async (req, res) => {
+  if (req.body.recoverAccount.new !== req.body.recoverAccount.confirmNew)
     return res
       .status(409)
       .send("Password and password confirmation are not the same");
 
   const { error } = validatePasswordRecovery(req.body.recoverAccount);
   if (error) return res.status(400).send(error.details[0].message);
+
+  const user = await User.findOne({
+    hashedId: req.body.recoverAccount.hashedId
+  });
+
+  if (!user) return res.status(400).send("User not found");
+
+  const salting = await bcrypt.genSalt(10);
+  const hash = await bcrypt.hash(req.body.recoverAccount.confirmNew, salting);
+  user.password = hash;
+  user.hashedId = undefined;
+  user.expire_at = undefined;
+  await user.save();
+
+  res
+    .status(200)
+    .send(
+      "New password has been set, you can now logIn with your new password"
+    );
 });
 
 //User authentication
