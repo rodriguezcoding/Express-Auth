@@ -83,8 +83,12 @@ const validatePasswordRecovery = password => {
       .min(3)
       .max(1024)
       .required(),
-    confirmNew: string(),
-    hashedId: string()
+    confirmNew: joi
+      .string()
+      .min(3)
+      .max(1024)
+      .required(),
+    hashedId: joi.string().required()
   };
   return joi.validate(password, schema);
 };
