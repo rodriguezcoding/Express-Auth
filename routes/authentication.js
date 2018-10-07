@@ -7,12 +7,36 @@ const {
   validateAccountRecoveryEmail,
   validatePasswordRecovery
 } = require("../models/user.js");
+
 const express = require("express");
 const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
 const authToken = require("../middlewares/authToken.js");
-const accountRecovery = require("../services/accountRecovery.js");
+
+//User authentication
+router.post("/sign-in", async (req, res) => {
+  const { error } = signInValidation(req.body.signIn);
+  if (error) return res.status(400).send(error.details[0].message);
+
+  const checkUser = await User.findOne({ email: req.body.signIn.email });
+  if (!checkUser) return res.status(400).send("Invalid email or password");
+
+  const validatePassword = await bcrypt.compare(
+    req.body.signIn.password,
+    checkUser.password
+  );
+
+  if (!validatePassword)
+    return res.status(400).send("Invalid email or password");
+
+  const token = checkUser.genToken();
+
+  res
+    .header("x-auth-token", token)
+    .status(200)
+    .send("LogIn successfully");
+});
 
 //User registration
 router.post("/sign-up", async (req, res) => {
@@ -29,14 +53,16 @@ router.post("/sign-up", async (req, res) => {
 
   const user = new User(req.body.signUp);
   const salting = await bcrypt.genSalt(10);
-  user.isActive = false;
+
+  user.status = 0;
   user.password = await bcrypt.hash(user.password, salting);
 
   let hashedId = await bcrypt.hash(user._id.toString(), 10);
   hashedId = hashedId.replace(/[/\\&;%@+,]/g, "");
+
   user.hashedId = hashedId;
 
-  const { smtpTransport, close } = emailConfirmation(user);
+  const { smtpTransport, close } = emailConfirmation(false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -63,7 +89,7 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
     return res.status(400).send("An error has occur during email confirmation");
   user.expire_at = undefined;
   user.hashedId = undefined;
-  user.isActive = true;
+  user.status = 1;
   await user.save();
   const token = user.genToken();
   res
@@ -74,12 +100,12 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
     );
 });
 
-//Re-send verification
-router.post("/reSendVerification/:id", authToken, async (req, res) => {
+//Re-send Email Confirmation
+router.post("/emailConfirmation/:id", authToken, async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
 
-  const { smtpTransport, close } = emailConfirmation(user);
+  const { smtpTransport, close } = emailConfirmation(false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -155,7 +181,7 @@ router.post("/accountRecovery", async (req, res) => {
     email: req.body.accountRecovery.email
   });
 
-  const { smtpTransport, close } = accountRecovery(updatedUser);
+  const { smtpTransport, close } = emailConfirmation(true, updatedUser);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -172,7 +198,7 @@ router.post("/accountRecovery", async (req, res) => {
     );
 });
 
-//Verify hash first then redirect to add the new password for the account recovery
+//Account recovery verifiying the hashedId
 router.get("/accountRecovery/verify/:hash", async (req, res) => {
   const user = await User.findOne({ hashedId: req.params.hash });
   if (!user)
@@ -189,7 +215,8 @@ router.get("/accountRecovery/verify/:hash", async (req, res) => {
   res.status(200).send(user.hashedId);
 });
 
-router.patch("/accountRecovery/recoverPassword/", async (req, res) => {
+//If the hashed is received in /accountRecovery/verify/:hash, then is time for the new password
+router.patch("/accountRecovery", async (req, res) => {
   if (req.body.recoverAccount.new !== req.body.recoverAccount.confirmNew)
     return res
       .status(409)
@@ -216,30 +243,6 @@ router.patch("/accountRecovery/recoverPassword/", async (req, res) => {
     .send(
       "New password has been set, you can now logIn with your new password"
     );
-});
-
-//User authentication
-router.post("/sign-in", async (req, res) => {
-  const { error } = signInValidation(req.body.signIn);
-  if (error) return res.status(400).send(error.details[0].message);
-
-  const checkUser = await User.findOne({ email: req.body.signIn.email });
-  if (!checkUser) return res.status(400).send("Invalid email or password");
-
-  const validatePassword = await bcrypt.compare(
-    req.body.signIn.password,
-    checkUser.password
-  );
-
-  if (!validatePassword)
-    return res.status(400).send("Invalid email or password");
-
-  const token = checkUser.genToken();
-
-  res
-    .header("x-auth-token", token)
-    .status(200)
-    .send("LogIn successfully");
 });
 
 module.exports = router;

@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema(
     userPicture: {
       type: String
     },
-    isActive: { type: Boolean, require: true },
+    // 0 = inactive, 1= active, -1= blocked
+    status: { type: Number, require: true },
     firstName: {
       type: String,
       required: true,

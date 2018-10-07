@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const xoauth2 = require("xoauth2");
 const smtp = require("nodemailer-smtp-transport");
 
-const emailConfirmation = (user) => {
+const emailConfirmation = (isRecovery, user) => {
   const xoAuthGenerate = xoauth2.createXOAuth2Generator({
     type: "OAuth2",
     user: "luis.rodriguezcastro31@gmail.com",
@@ -14,13 +14,16 @@ const emailConfirmation = (user) => {
   let mailOptions = {
     from: "NoReply<authenticate.noreply@gmail.com>",
     to: user.email,
-    subject: "Confirm Your Email",
+    subject: isRecovery ? "Account Recovery" : "Confirm Your Email",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to the service, to complete registrarion please click: http://localhost:4741/emailConfirmation/verify/${
-      user.hashedId
-    } </b>`
+    html: `<b>Hello welcome to the service, ${
+      isRecovery
+        ? "please click the next url to recover account:"
+        : "to complete registrarion please click:"
+    } http://localhost:4741/${
+      isRecovery ? "accountRecovery" : "emailConfirmation"
+    }/verify/${user.hashedId} </b>`
   };
-
   const smtpTransport = nodemailer.createTransport(
     smtp({
       service: "gmail",
