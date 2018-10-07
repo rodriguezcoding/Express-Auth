@@ -13,7 +13,6 @@ const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
 const authToken = require("../middlewares/authToken.js");
-const accountRecovery = require("../services/accountRecovery.js");
 
 //User authentication
 router.post("/sign-in", async (req, res) => {
@@ -63,7 +62,7 @@ router.post("/sign-up", async (req, res) => {
 
   user.hashedId = hashedId;
 
-  const { smtpTransport, close } = emailConfirmation(user);
+  const { smtpTransport, close } = emailConfirmation(false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -106,7 +105,7 @@ router.post("/emailConfirmation/:id", authToken, async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
 
-  const { smtpTransport, close } = emailConfirmation(user);
+  const { smtpTransport, close } = emailConfirmation(false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -182,7 +181,7 @@ router.post("/accountRecovery", async (req, res) => {
     email: req.body.accountRecovery.email
   });
 
-  const { smtpTransport, close } = accountRecovery(updatedUser);
+  const { smtpTransport, close } = emailConfirmation(true, updatedUser);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -216,7 +215,7 @@ router.get("/accountRecovery/verify/:hash", async (req, res) => {
   res.status(200).send(user.hashedId);
 });
 
-//
+//If the hashed is received in /accountRecovery/verify/:hash, then is time for the new password
 router.patch("/accountRecovery", async (req, res) => {
   if (req.body.recoverAccount.new !== req.body.recoverAccount.confirmNew)
     return res

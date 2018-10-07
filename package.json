@@ -11,6 +11,7 @@
     "lodash": "^4.17.11",
     "mocha": "^5.2.0",
     "mongoose": "^5.3.0",
+    "multer": "^1.4.0",
     "nodemailer": "^4.6.8",
     "nodemailer-smtp-transport": "^2.7.4",
     "nodemon": "^1.18.4",
