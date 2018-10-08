@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
       maxlength: 50
     },
     hashedId: { type: String },
+    isAdmin: { type: Boolean, required: true },
     userPicture: {
       type: String
     },
@@ -105,7 +106,7 @@ const validateNewPassword = password => {
   return joi.validate(password, schema);
 };
 
-const validateAccountRecovery = email => {
+const validateEmail = email => {
   const schema = {
     email: joi
       .string()
@@ -150,7 +151,7 @@ const validateSignUp = user => {
 };
 
 exports.validatePasswordRecovery = validatePasswordRecovery;
-exports.validateAccountRecoveryEmail = validateAccountRecovery;
+exports.validateEmail = validateEmail;
 exports.validateNewPassword = validateNewPassword;
 exports.signUpValidation = validateSignUp;
 exports.signInValidation = validateSignIn;

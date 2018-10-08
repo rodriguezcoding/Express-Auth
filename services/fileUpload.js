@@ -16,5 +16,3 @@ cloudinary.uploader.upload("file",
   }
 );
 // };
-
-
