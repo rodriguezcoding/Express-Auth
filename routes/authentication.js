@@ -4,7 +4,7 @@ const {
   signUpValidation,
   signInValidation,
   validateNewPassword,
-  validateAccountRecoveryEmail,
+  validateEmail,
   validatePasswordRecovery
 } = require("../models/user.js");
 
@@ -12,6 +12,7 @@ const express = require("express");
 const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
+const {Team} = require("../models/team.js")
 const authToken = require("../middlewares/authToken.js");
 
 //User authentication
@@ -29,6 +30,10 @@ router.post("/sign-in", async (req, res) => {
 
   if (!validatePassword)
     return res.status(400).send("Invalid email or password");
+
+  checkUser.hashedId = undefined;
+  checkUser.expire_at = undefined;
+  await checkUser.save();
 
   const token = checkUser.genToken();
 
@@ -55,6 +60,7 @@ router.post("/sign-up", async (req, res) => {
   const salting = await bcrypt.genSalt(10);
 
   user.status = 0;
+  user.isAdmin = false;
   user.password = await bcrypt.hash(user.password, salting);
 
   let hashedId = await bcrypt.hash(user._id.toString(), 10);
@@ -62,7 +68,7 @@ router.post("/sign-up", async (req, res) => {
 
   user.hashedId = hashedId;
 
-  const { smtpTransport, close } = emailConfirmation(false, user);
+  const { smtpTransport, close } = emailConfirmation(false, false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -90,6 +96,7 @@ router.get("/emailConfirmation/verify/:hash", async (req, res) => {
   user.expire_at = undefined;
   user.hashedId = undefined;
   user.status = 1;
+  user.isAdmin = true;
   await user.save();
   const token = user.genToken();
   res
@@ -105,7 +112,7 @@ router.post("/emailConfirmation/:id", authToken, async (req, res) => {
   const user = await User.findById(req.params.id);
   if (!user) return res.status(400).send("User not found");
 
-  const { smtpTransport, close } = emailConfirmation(false, user);
+  const { smtpTransport, close } = emailConfirmation(false, false, user);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -161,7 +168,7 @@ router.patch("/change-password", authToken, async (req, res) => {
 
 //Account Recovery Request
 router.post("/accountRecovery", async (req, res) => {
-  const { error } = validateAccountRecoveryEmail(req.body.accountRecovery);
+  const { error } = validateEmail(req.body.accountRecovery);
   if (error) return res.status(400).send("Invalid email format");
 
   const user = await User.findOne({ email: req.body.accountRecovery.email });
@@ -181,7 +188,7 @@ router.post("/accountRecovery", async (req, res) => {
     email: req.body.accountRecovery.email
   });
 
-  const { smtpTransport, close } = emailConfirmation(true, updatedUser);
+  const { smtpTransport, close } = emailConfirmation(false, true, updatedUser);
   const sendMail = await smtpTransport;
 
   if (!sendMail) {
@@ -217,22 +224,22 @@ router.get("/accountRecovery/verify/:hash", async (req, res) => {
 
 //If the hashed is received in /accountRecovery/verify/:hash, then is time for the new password
 router.patch("/accountRecovery", async (req, res) => {
-  if (req.body.recoverAccount.new !== req.body.recoverAccount.confirmNew)
+  if (req.body.accountRecovery.new !== req.body.accountRecovery.confirmNew)
     return res
       .status(409)
       .send("Password and password confirmation are not the same");
 
-  const { error } = validatePasswordRecovery(req.body.recoverAccount);
+  const { error } = validatePasswordRecovery(req.body.accountRecovery);
   if (error) return res.status(400).send(error.details[0].message);
 
   const user = await User.findOne({
-    hashedId: req.body.recoverAccount.hashedId
+    hashedId: req.body.accountRecovery.hashedId
   });
 
   if (!user) return res.status(400).send("User not found");
 
   const salting = await bcrypt.genSalt(10);
-  const hash = await bcrypt.hash(req.body.recoverAccount.confirmNew, salting);
+  const hash = await bcrypt.hash(req.body.accountRecovery.confirmNew, salting);
   user.password = hash;
   user.hashedId = undefined;
   user.expire_at = undefined;
@@ -244,5 +251,36 @@ router.patch("/accountRecovery", async (req, res) => {
       "New password has been set, you can now logIn with your new password"
     );
 });
+
+router.post("/teamInvite", authToken, async (req, res) => {
+
+  const { error } = validateEmail(req.body.sendInvite)
+  if (error) return res.status(400).send("Invalid email format");
+ 
+  const team = await Team.findOne({ ownerID: req.user._id })
+  const invite = {
+    email: req.body.sendInvite.email,
+    hashedId: team.hashedId
+  }
+
+  const { smtpTransport, close } = emailConfirmation(true, false, invite);
+  const sendMail = await smtpTransport;
+
+  if (!sendMail) {
+    close.close();
+    return res
+      .status(400)
+      .send("There was an error trying to recover account please try again");
+  }
+  close.close();
+  res
+    .status(200)
+    .send(
+      `The team invite has been sent`
+    );
+
+});
+
+router.get("/invite/verify/:hash", async (req, res) =>{})
 
 module.exports = router;

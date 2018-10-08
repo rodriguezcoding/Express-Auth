@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const xoauth2 = require("xoauth2");
 const smtp = require("nodemailer-smtp-transport");
 
-const emailConfirmation = (isRecovery, user) => {
+const emailConfirmation = (isInvite, isRecovery, user) => {
   const xoAuthGenerate = xoauth2.createXOAuth2Generator({
     type: "OAuth2",
     user: "luis.rodriguezcastro31@gmail.com",
@@ -16,7 +16,7 @@ const emailConfirmation = (isRecovery, user) => {
     to: user.email,
     subject: isRecovery ? "Account Recovery" : "Confirm Your Email",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to the service, ${
+    html: `<b>Hello welcome to Super Task, ${
       isRecovery
         ? "please click the next url to recover account:"
         : "to complete registrarion please click:"
@@ -24,6 +24,17 @@ const emailConfirmation = (isRecovery, user) => {
       isRecovery ? "accountRecovery" : "emailConfirmation"
     }/verify/${user.hashedId} </b>`
   };
+
+  let invitation = {
+    from: "NoReply<authenticate.noreply@gmail.com>",
+    to: user.email,
+    subject: "Super Task Team Invitation",
+    generateTextFromHTML: true,
+    html: `<b>Hello welcome to Super Task, please confirm your invitation: http://localhost:4741/invite/verify/${
+      user.hashedId
+    } </b>`
+  };
+
   const smtpTransport = nodemailer.createTransport(
     smtp({
       service: "gmail",
@@ -34,7 +45,7 @@ const emailConfirmation = (isRecovery, user) => {
   );
 
   return {
-    smtpTransport: smtpTransport.sendMail(mailOptions),
+    smtpTransport: smtpTransport.sendMail(isInvite ? invitation : mailOptions),
     close: smtpTransport
   };
 };
