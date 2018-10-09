@@ -12,8 +12,9 @@ const express = require("express");
 const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
-const {Team} = require("../models/team.js")
+const { Team } = require("../models/team.js");
 const authToken = require("../middlewares/authToken.js");
+const mongoose = require("mongoose");
 
 //User authentication
 router.post("/sign-in", async (req, res) => {
@@ -81,6 +82,11 @@ router.post("/sign-up", async (req, res) => {
   }
 
   close.close();
+  if (req.body.teamInvite) {
+    const team = await Team.findOne({ hashedId: req.body.teamInvite.hashedId });
+    team.teamMembers.push(user.email);
+    await team.save();
+  }
   await user.save();
 
   res.send(
@@ -244,7 +250,6 @@ router.patch("/accountRecovery", async (req, res) => {
   user.hashedId = undefined;
   user.expire_at = undefined;
   await user.save();
-
   res
     .status(200)
     .send(
@@ -252,16 +257,24 @@ router.patch("/accountRecovery", async (req, res) => {
     );
 });
 
-router.post("/teamInvite", authToken, async (req, res) => {
+//send invite to new team member
+router.post("/teamInvite/:id", authToken, async (req, res) => {
+  const { error } = validateEmail(req.body.sendInvite);
+  if (error) return res.status(400).send(error.details[0].message);
 
-  const { error } = validateEmail(req.body.sendInvite)
-  if (error) return res.status(400).send("Invalid email format");
- 
-  const team = await Team.findOne({ ownerID: req.user._id })
+  const checkTeam = await Team.findById({ _id: req.params.id });
+  if (!checkTeam) return res.status(400).send("This team does not exist");
+  const checkMemberExistence = checkTeam.teamMembers.indexOf(
+    req.body.sendInvite.email
+  );
+
+  if (checkMemberExistence > -1)
+    return res.status(409).send("This member already exist");
+
   const invite = {
     email: req.body.sendInvite.email,
-    hashedId: team.hashedId
-  }
+    hashedId: checkTeam.hashedId
+  };
 
   const { smtpTransport, close } = emailConfirmation(true, false, invite);
   const sendMail = await smtpTransport;
@@ -273,14 +286,18 @@ router.post("/teamInvite", authToken, async (req, res) => {
       .send("There was an error trying to recover account please try again");
   }
   close.close();
-  res
-    .status(200)
-    .send(
-      `The team invite has been sent`
-    );
-
+  res.status(200).send(`The team invite has been sent`);
 });
 
-router.get("/invite/verify/:hash", async (req, res) =>{})
+//verify the invite hash
+router.get("/teamInvite/verify/:hash", async (req, res) => {
+  const team = await Team.findOne({ hashedId: req.params.hash });  
+  if (!team) return res.status(400).send("Team not found");
+  const hash = await bcrypt.hash(team._id.toString(), 10);
+  const hashedId = hash.replace(/[/\\&;%@+.,]/g, "");
+  team.hashedId = hashedId;
+  await team.save();
+  res.status(200).send(team.hashedId);
+});
 
 module.exports = router;
