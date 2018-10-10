@@ -30,7 +30,7 @@ const emailConfirmation = (isInvite, isRecovery, user) => {
     to: user.email,
     subject: "Super Task Team Invitation",
     generateTextFromHTML: true,
-    html: `<b>Hello welcome to Super Task, please confirm your invitation: http://localhost:4741/teamInvite/verify/${
+    html: `<b>Hello welcome to Super Task, please confirm your invitation: http://localhost:4741/teams/invite/verify/${
       user.hashedId
     } </b>`
   };

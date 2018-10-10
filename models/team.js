@@ -33,5 +33,18 @@ const validateTeam = team => {
   return joi.validate(picked, teamSchema);
 };
 
+const validateEmail = email => {
+  const schema = {
+    email: joi
+      .string()
+      .min(5)
+      .max(255)
+      .email()
+      .required()
+  };
+
+  return joi.validate(email, schema);
+};
 exports.Team = mongoose.model("Team", teamSchema);
 exports.validateTeam = validateTeam;
+exports.validateEmail = validateEmail;
