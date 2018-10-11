@@ -12,8 +12,9 @@ const express = require("express");
 const router = express();
 const _ = require("lodash");
 const emailConfirmation = require("../services/emailConfirmation.js");
-const {Team} = require("../models/team.js")
+const { Team } = require("../models/team.js");
 const authToken = require("../middlewares/authToken.js");
+const mongoose = require("mongoose");
 
 //User authentication
 router.post("/sign-in", async (req, res) => {
@@ -81,6 +82,11 @@ router.post("/sign-up", async (req, res) => {
   }
 
   close.close();
+  if (req.body.teamInvite) {
+    const team = await Team.findOne({ hashedId: req.body.teamInvite.hashedId });
+    team.teamMembers.push(user.email);
+    await team.save();
+  }
   await user.save();
 
   res.send(
@@ -244,43 +250,11 @@ router.patch("/accountRecovery", async (req, res) => {
   user.hashedId = undefined;
   user.expire_at = undefined;
   await user.save();
-
   res
     .status(200)
     .send(
       "New password has been set, you can now logIn with your new password"
     );
 });
-
-router.post("/teamInvite", authToken, async (req, res) => {
-
-  const { error } = validateEmail(req.body.sendInvite)
-  if (error) return res.status(400).send("Invalid email format");
- 
-  const team = await Team.findOne({ ownerID: req.user._id })
-  const invite = {
-    email: req.body.sendInvite.email,
-    hashedId: team.hashedId
-  }
-
-  const { smtpTransport, close } = emailConfirmation(true, false, invite);
-  const sendMail = await smtpTransport;
-
-  if (!sendMail) {
-    close.close();
-    return res
-      .status(400)
-      .send("There was an error trying to recover account please try again");
-  }
-  close.close();
-  res
-    .status(200)
-    .send(
-      `The team invite has been sent`
-    );
-
-});
-
-router.get("/invite/verify/:hash", async (req, res) =>{})
 
 module.exports = router;

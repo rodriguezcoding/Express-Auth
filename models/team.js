@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const joi = require("joi");
-const moment = require("moment");
+const _ = require("lodash");
 const teamSchema = new mongoose.Schema({
   ownerID: {
     type: String,
@@ -15,28 +15,31 @@ const teamSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  teamMembers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  teamMembers: [{ type: String, ref: "User" }],
   teamProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
-  date: { type: String, required: true }
+  date: { type: String }
 });
-teamSchema.pre("save", next => {
-  this.date = moment().format("MMM Do YYYY, h:mm:ss a");
-  next();
-});
-// teamSchema.methods.genDate = () => {};
+
 const validateTeam = team => {
-  const picked = _.pick(team, [
-    "ownerID",
-    "ownerEmail",
-    "hashedId",
-    "teamName"
-  ]);
+  const picked = _.pick(team, ["teamName"]);
   const teamSchema = {
-    ownerID: joi.string().required(),
-    ownerEmail: joi.string().required(),
-    hashedId: joi.string().required(),
     teamName: joi.string().required()
   };
   return joi.validate(picked, teamSchema);
 };
+
+const validateEmail = email => {
+  const schema = {
+    email: joi
+      .string()
+      .min(5)
+      .max(255)
+      .email()
+      .required()
+  };
+
+  return joi.validate(email, schema);
+};
 exports.Team = mongoose.model("Team", teamSchema);
+exports.validateTeam = validateTeam;
+exports.validateEmail = validateEmail;
