@@ -16,7 +16,7 @@ const teamSchema = new mongoose.Schema({
     required: true
   },
   teamMembers: [{ type: String, ref: "User" }],
-  teamProjects: [{ type: mongoose.Schema.Types.ObjectId, ref: "Project" }],
+  
   date: { type: String }
 });
 

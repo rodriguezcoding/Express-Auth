@@ -6,6 +6,7 @@ const { Team, validateTeam, validateEmail } = require("../models/team.js");
 const authToken = require("../middlewares/authToken.js");
 const bcrypt = require("bcryptjs");
 const moment = require("moment");
+const mongoose = require("mongoose");
 
 //get all teams
 router.get("/teams", authToken, async (req, res) => {
@@ -13,11 +14,13 @@ router.get("/teams", authToken, async (req, res) => {
   res.status(200).send(teams);
 });
 
-//
+//delete team
 router.delete("/teams/:id", authToken, async (req, res) => {
-  const team = await Team.findByIdAndRemove(req.params.id);
-  if (!team) return res.status(400).send("Could not delete team");
+  console.log(req.params.id);
+  const checkTeam = await Team.findOne({ _id: req.params.id });
+  if (!checkTeam) return res.status(404).send("Could not delete team");
 
+  await Team.findByIdAndRemove(req.params.id);
   res.status(200).send("Team deleted successfully");
 });
 
@@ -47,7 +50,7 @@ router.post("/teams", authToken, async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message);
 
   const team = new Team(req.body.team);
-  const hash = await bcrypt.hash(team._id.toString(), 10);
+  let hash = await bcrypt.hash(team._id.toString(), 10);
   hash = hash.replace(/[/\\&;%@+.,]/g, "");
   team.hashedId = hash;
   team.ownerID = req.user._id;
