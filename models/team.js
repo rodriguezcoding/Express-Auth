@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const joi = require("joi");
 const _ = require("lodash");
+
 const teamSchema = new mongoose.Schema({
   ownerID: {
     type: String,
@@ -16,7 +17,7 @@ const teamSchema = new mongoose.Schema({
     required: true
   },
   teamMembers: [{ type: String, ref: "User" }],
-  
+
   date: { type: String }
 });
 
