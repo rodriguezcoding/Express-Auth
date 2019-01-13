@@ -4,13 +4,21 @@ const _ = require("lodash");
 const { projectValidation, Project } = require("../models/project.js");
 const authToken = require("../middlewares/authToken.js");
 
+// This route does both, find by id or find all
 router.get("/projects/:id", authToken, async (req, res) => {
-  const projects = await Project.find(
-    req.params.id ? { _id: req.params.id } : ""
-  );
-  if (!projects) return res.status(404).send("Couldn't find any project");
+  let result;
+  switch (req.params.id) {
+    case !undefined:
+      result = await Project.findById(req.params.id);
+      break;
 
-  res.status(200).send({ projects });
+    case undefined:
+      result = await Project.find();
+      break;
+  }
+  if (!result) return res.status(404).send("Couldn't find any project");
+
+  res.status(200).send({ result });
 });
 
 router.post("/projects/:id", authToken, async (req, res) => {
