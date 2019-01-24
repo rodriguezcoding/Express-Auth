@@ -21,22 +21,22 @@ router.post("/sign-in", async (req, res) => {
   const { error } = signInValidation(req.body.signIn);
   if (error) return res.status(400).send(error.details[0].message);
 
-  const checkUser = await User.findOne({ email: req.body.signIn.email });
-  if (!checkUser) return res.status(400).send("Invalid email or password");
+  const user = await User.findOne({ email: req.body.signIn.email });
+  if (!user) return res.status(400).send("Invalid email or password");
 
   const validatePassword = await bcrypt.compare(
     req.body.signIn.password,
-    checkUser.password
+    user.password
   );
 
   if (!validatePassword)
     return res.status(400).send("Invalid email or password");
 
-  checkUser.hashedId = undefined;
-  checkUser.expire_at = undefined;
-  await checkUser.save();
+  user.hashedId = undefined;
+  user.expire_at = undefined;
+  await user.save();
 
-  const token = checkUser.genToken();
+  const token = user.genToken();
 
   res
     .header("x-auth-token", token)

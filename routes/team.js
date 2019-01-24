@@ -10,15 +10,7 @@ const moment = require("moment");
 //get all teams
 router.get("/teams", authToken, async (req, res) => {
   const teams = await Team.find({ ownerID: req.user._id });
-  res.status(200).send(teams);
-});
-
-//
-router.delete("/teams/:id", authToken, async (req, res) => {
-  const team = await Team.findByIdAndRemove(req.params.id);
-  if (!team) return res.status(400).send("Could not delete team");
-
-  res.status(200).send("Team deleted successfully");
+  res.status(200).send({ teams: teams });
 });
 
 //update team name or remove team member "email"
@@ -47,7 +39,7 @@ router.post("/teams", authToken, async (req, res) => {
   if (error) return res.status(400).send(error.details[0].message);
 
   const team = new Team(req.body.team);
-  const hash = await bcrypt.hash(team._id.toString(), 10);
+  let hash = await bcrypt.hash(team._id.toString(), 10);
   hash = hash.replace(/[/\\&;%@+.,]/g, "");
   team.hashedId = hash;
   team.ownerID = req.user._id;
@@ -99,7 +91,17 @@ router.get("/teams/invite/verify/:hash", async (req, res) => {
   const hashedId = hash.replace(/[/\\&;%@+.,]/g, "");
   team.hashedId = hashedId;
   await team.save();
-  res.status(200).send(team.hashedId);
+  res.status(200).send({ hash: team.hashedId });
+});
+
+//delete team
+router.delete("/teams/:id", authToken, async (req, res) => {
+  console.log(req.params.id);
+  const checkTeam = await Team.findOne({ _id: req.params.id });
+  if (!checkTeam) return res.status(404).send("Could not delete team");
+
+  await Team.findByIdAndRemove(req.params.id);
+  res.status(200).send("Team deleted successfully");
 });
 
 module.exports = router;

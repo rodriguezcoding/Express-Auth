@@ -7,6 +7,7 @@ require("dotenv").config();
 //routes
 const authentication = require("./routes/authentication");
 const team = require("./routes/team.js");
+const project = require("./routes/project.js");
 
 mongoose
   .connect(
@@ -21,6 +22,7 @@ app.use(cors({ origin: process.env.CLIENT_ORIGIN || "http://localhost:3000" }));
 app.use(express.json());
 app.use(authentication);
 app.use(team);
+app.use(project);
 
 const port = process.env.PORT || 4741;
 

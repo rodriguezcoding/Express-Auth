@@ -11,7 +11,7 @@ const emailConfirmation = (isInvite, isRecovery, user) => {
     refreshToken: process.env.SECRET_KEY_EMAIL_REFRESH_TOKEN
   });
 
-  let mailOptions = {
+  let recovery = {
     from: "NoReply<authenticate.noreply@gmail.com>",
     to: user.email,
     subject: isRecovery ? "Account Recovery" : "Confirm Your Email",
@@ -45,7 +45,7 @@ const emailConfirmation = (isInvite, isRecovery, user) => {
   );
 
   return {
-    smtpTransport: smtpTransport.sendMail(isInvite ? invitation : mailOptions),
+    smtpTransport: smtpTransport.sendMail(isInvite ? invitation : recovery),
     close: smtpTransport
   };
 };
